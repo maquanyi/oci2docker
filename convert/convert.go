@@ -2,8 +2,8 @@ package convert
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -38,7 +38,13 @@ EXPOSE {{.Expose}}
 `
 )
 
-func RunOCI2Docker(path string, imgName string, port string) error {
+func RunOCI2Docker(path string, flagDebug bool, imgName string, port string) error {
+	if flagDebug {
+		logrus.SetLevel(logrus.DebugLevel)
+	} else {
+		logrus.SetLevel(logrus.InfoLevel)
+	}
+
 	appdir := "./rootfs"
 	entrypoint := getEntrypointFromSpecs(path)
 	env := getEnvFromSpecs(path)
@@ -66,10 +72,27 @@ func RunOCI2Docker(path string, imgName string, port string) error {
 
 	dirWork := createWorkDir()
 
-	run(exec.Command("mv", "./Dockerfile", dirWork+"/Dockerfile"))
-	run(exec.Command("cp", "-rf", path+"/rootfs", dirWork))
+	err := run(exec.Command("mv", "./Dockerfile", dirWork+"/Dockerfile"))
+	if err != nil {
+		logrus.Debugf("Store Dockerfile failed: %v", err)
+	}
+	err = run(exec.Command("cp", "-rf", path+"/rootfs", dirWork))
+	if err != nil {
+		logrus.Debugf("Store rootfs failed: %v", err)
+	}
 
-	run(exec.Command("docker", "build", "-t", imgName, dirWork))
+	buildOut := ""
+	if flagDebug == false {
+		buildOut = " > /dev/null"
+	}
+	cmdStr := fmt.Sprintf("docker build -t %s %s %s", imgName, dirWork, buildOut)
+
+	err = run(exec.Command("/bin/sh", "-c", cmdStr))
+	if err != nil {
+		logrus.Debugf("Docker build failed: %v", err)
+	} else {
+		logrus.Infof("Docker image %v generated successfully.", imgName)
+	}
 
 	return nil
 }
@@ -79,7 +102,7 @@ func generateDockerfile(dockerInfo DockerInfo) {
 
 	f, err := os.Create("Dockerfile")
 	if err != nil {
-		log.Fatal("Error wrinting Dockerfile %v", err.Error())
+		logrus.Debugf("Error wrinting Dockerfile %v", err.Error())
 		return
 	}
 	defer f.Close()

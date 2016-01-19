@@ -9,7 +9,6 @@ import (
 )
 
 func main() {
-	logrus.SetLevel(logrus.DebugLevel)
 	app := cli.NewApp()
 	app.Name = "oci2docker"
 	app.Usage = "A tool for coverting oci bundle to docker image"
@@ -21,12 +20,16 @@ func main() {
 			Flags: []cli.Flag{
 				cli.StringFlag{
 					Name:  "oci-bundle",
-					Value: "oci-bundle",
+					Value: "",
 					Usage: "path of oci-bundle to convert",
+				},
+				cli.BoolFlag{
+					Name:  "debug",
+					Usage: "Enables debug messages",
 				},
 				cli.StringFlag{
 					Name:  "image-name",
-					Value: "image-name",
+					Value: "",
 					Usage: "docker image name",
 				},
 				cli.StringFlag{
@@ -46,24 +49,30 @@ func oci2docker(c *cli.Context) {
 	ociPath := c.String("oci-bundle")
 	imgName := c.String("image-name")
 	port := c.String("port")
+	flagDebug := c.Bool("debug")
 
-	if ociPath == "" {
+	if c.NumFlags() == 0 {
 		cli.ShowCommandHelp(c, "convert")
 		return
 	}
 
+	if ociPath == "" {
+		logrus.Infof("Please specify OCI bundle path.")
+		return
+	}
+
 	if imgName == "" {
-		cli.ShowCommandHelp(c, "convert")
+		logrus.Infof("Please specify docker image name for output.")
 		return
 	}
 
 	_, err := os.Stat(ociPath)
 	if os.IsNotExist(err) {
-		cli.ShowCommandHelp(c, "convert")
+		logrus.Infof("OCI bundle path does not exsit.")
 		return
 	}
 
-	convert.RunOCI2Docker(ociPath, imgName, port)
+	convert.RunOCI2Docker(ociPath, flagDebug, imgName, port)
 
 	return
 }
