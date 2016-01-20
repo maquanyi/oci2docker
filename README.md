@@ -2,6 +2,38 @@
 
 oci2docker is a small library and CLI binary that converts [OCI](https://github.com/opencontainers/specs) bundle to docker image. It takes OCI bundle as input, and gets docker image as output.
 
+## How it works
+
+An important work of oci2docker is converting OCI Specs to Dockerfile, below is a list of conversion principle:
+
+### config.json
+
+#### Root Configuration
+|OCI Specs|Dockerfile|
+|---------|----------|
+| path | ADD |
+
+#### Process configuration
+|OCI Specs|Dockerfile|
+|---------|----------|
+| env | ENV |
+| cwd | WORKDIR |
+| args | ENTRYPOINT |
+| user | USER |
+
+#### Mount Points
+|OCI Specs|Dockerfile|
+|---------|----------|
+| mounts | VOLUME |
+
+### runtime.json
+
+#### Mount Configuration
+|OCI Specs|Dockerfile|
+|---------|----------|
+| mounts | VOLUME |
+
+
 ## Build
 
 Installation is as simple as:
