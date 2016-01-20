@@ -33,6 +33,10 @@ An important work of oci2docker is converting OCI Specs to Dockerfile, below is 
 |---------|----------|
 | mounts | VOLUME |
 
+#### Hooks
+|OCI Specs|Dockerfile|
+|---------|----------|
+| Prestart | CMD |
 
 ## Build
 
