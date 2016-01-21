@@ -21,13 +21,16 @@ type DockerInfo struct {
 	Environment string
 	Port        bool
 	Env         bool
+	Add         bool
 }
 
 const (
 	buildTemplate = `
 FROM scratch
 MAINTAINER ChengTiesheng <chengtiesheng@huawei.com>
+{{if .Add}}
 ADD {{.Appdir}} .
+{{end}}
 {{if .Env}} 
 ENV {{.Environment}}
 {{end}}
@@ -45,7 +48,7 @@ func RunOCI2Docker(path string, flagDebug bool, imgName string, port string) err
 		logrus.SetLevel(logrus.InfoLevel)
 	}
 
-	appdir := "./rootfs"
+	appdir := getRootPathFromSpecs(path)
 	entrypoint := getEntrypointFromSpecs(path)
 	env := getEnvFromSpecs(path)
 
@@ -59,6 +62,12 @@ func RunOCI2Docker(path string, flagDebug bool, imgName string, port string) err
 		bEnv = true
 	}
 
+	bAdd := false
+	if appdir != "" {
+		bAdd = true
+		appdir = "./" + appdir
+	}
+
 	dockerInfo := DockerInfo{
 		Appdir:      appdir,
 		Entrypoint:  entrypoint,
@@ -66,6 +75,7 @@ func RunOCI2Docker(path string, flagDebug bool, imgName string, port string) err
 		Environment: env,
 		Port:        bPort,
 		Env:         bEnv,
+		Add:         bAdd,
 	}
 
 	generateDockerfile(dockerInfo)
@@ -207,4 +217,13 @@ func getEnvFromSpecs(path string) string {
 	}
 
 	return env
+}
+
+func getRootPathFromSpecs(path string) string {
+	pSpec := getConfigSpec(path)
+	spec := *pSpec
+
+	rootpath := spec.Root.Path
+
+	return rootpath
 }
