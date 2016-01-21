@@ -14,14 +14,17 @@ import (
 	"github.com/opencontainers/specs"
 )
 
+// DockerInfo stores data for generating Dockerfile.
 type DockerInfo struct {
 	Appdir      string
 	Entrypoint  string
 	Expose      string
 	Environment string
+	Command     string
 	Port        bool
 	Env         bool
 	Add         bool
+	Cmd         bool
 }
 
 const (
@@ -34,6 +37,9 @@ ADD {{.Appdir}} .
 {{if .Env}} 
 ENV {{.Environment}}
 {{end}}
+{{if .Cmd}}
+CMD {{.Command}}
+{{end}}
 ENTRYPOINT ["{{.Entrypoint}}"]
 {{if .Port}}
 EXPOSE {{.Expose}}
@@ -41,6 +47,7 @@ EXPOSE {{.Expose}}
 `
 )
 
+// RunOCI2Docker is the entrypoint for oci2docker CLI tool.
 func RunOCI2Docker(path string, flagDebug bool, imgName string, port string) error {
 	if flagDebug {
 		logrus.SetLevel(logrus.DebugLevel)
@@ -51,6 +58,7 @@ func RunOCI2Docker(path string, flagDebug bool, imgName string, port string) err
 	appdir := getRootPathFromSpecs(path)
 	entrypoint := getEntrypointFromSpecs(path)
 	env := getEnvFromSpecs(path)
+	command := getPoststartFromSpecs(path)
 
 	bPort := false
 	if port != "" {
@@ -68,14 +76,21 @@ func RunOCI2Docker(path string, flagDebug bool, imgName string, port string) err
 		appdir = "./" + appdir
 	}
 
+	bCmd := false
+	if command != "" {
+		bCmd = true
+	}
+
 	dockerInfo := DockerInfo{
 		Appdir:      appdir,
 		Entrypoint:  entrypoint,
 		Expose:      port,
 		Environment: env,
+		Command:     command,
 		Port:        bPort,
 		Env:         bEnv,
 		Add:         bAdd,
+		Cmd:         bCmd,
 	}
 
 	generateDockerfile(dockerInfo)
@@ -181,6 +196,9 @@ func getRuntimeSpec(path string) *specs.LinuxRuntimeSpec {
 func getEntrypointFromSpecs(path string) string {
 
 	pSpec := getConfigSpec(path)
+	if pSpec == nil {
+		return ""
+	}
 	spec := *pSpec
 
 	prefixDir := ""
@@ -209,6 +227,9 @@ func getEntrypointFromSpecs(path string) string {
 func getEnvFromSpecs(path string) string {
 	env := ""
 	pSpec := getConfigSpec(path)
+	if pSpec == nil {
+		return ""
+	}
 	spec := *pSpec
 
 	for index := range spec.Process.Env {
@@ -221,9 +242,36 @@ func getEnvFromSpecs(path string) string {
 
 func getRootPathFromSpecs(path string) string {
 	pSpec := getConfigSpec(path)
+	if pSpec == nil {
+		return ""
+	}
 	spec := *pSpec
 
 	rootpath := spec.Root.Path
 
 	return rootpath
+}
+
+func getPoststartFromSpecs(path string) string {
+	pSpec := getRuntimeSpec(path)
+	if pSpec == nil {
+		return ""
+	}
+	spec := *pSpec
+
+	if len(spec.Hooks.Poststart) == 0 {
+		return ""
+	}
+
+	poststart := spec.Hooks.Prestart[0].Path
+	if poststart != "" {
+		for i := range spec.Hooks.Poststart[0].Args {
+			poststart = poststart + " " + spec.Hooks.Poststart[0].Args[i]
+		}
+		for i := range spec.Hooks.Poststart[0].Env {
+			poststart = poststart + " " + spec.Hooks.Poststart[0].Env[i]
+		}
+	}
+
+	return poststart
 }
