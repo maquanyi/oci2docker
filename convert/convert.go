@@ -55,6 +55,11 @@ func RunOCI2Docker(path string, flagDebug bool, imgName string, port string) err
 		logrus.SetLevel(logrus.InfoLevel)
 	}
 
+	if bValidate := validateOCIProc(path); bValidate != true {
+		logrus.Infof("Invalid oci bundle.")
+		return nil
+	}
+
 	appdir := getRootPathFromSpecs(path)
 	entrypoint := getEntrypointFromSpecs(path)
 	env := getEnvFromSpecs(path)
