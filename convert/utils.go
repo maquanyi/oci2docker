@@ -9,6 +9,7 @@ import (
 	"runtime"
 )
 
+// Err contains detail information of error message.
 type Err struct {
 	Message string
 	File    string
@@ -17,6 +18,7 @@ type Err struct {
 	Line    int
 }
 
+// Error outputs error message.
 func (e *Err) Error() string {
 	return fmt.Sprintf("[%v:%v] %v", e.File, e.Line, e.Message)
 }

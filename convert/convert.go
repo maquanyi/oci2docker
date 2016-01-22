@@ -263,7 +263,7 @@ func getPoststartFromSpecs(path string) string {
 		return ""
 	}
 
-	poststart := spec.Hooks.Prestart[0].Path
+	poststart := spec.Hooks.Poststart[0].Path
 	if poststart != "" {
 		for i := range spec.Hooks.Poststart[0].Args {
 			poststart = poststart + " " + spec.Hooks.Poststart[0].Args[i]
