@@ -13,17 +13,21 @@ import (
 )
 
 const (
-	// Path to config file inside the bundle
-	ConfigFile  = "config.json"
+	// ConfigFile is the path to config file inside the bundle
+	ConfigFile = "config.json"
+	// RuntimeFile is the path to runtime.json
 	RuntimeFile = "runtime.json"
-	// Path to rootfs directory inside the bundle
+	// RootfsDir is the path to rootfs directory inside the bundle
 	RootfsDir = "rootfs"
 )
 
 var (
+	// ErrNoRootFS ...
 	ErrNoRootFS = errors.New("no rootfs found in bundle")
+	// ErrNoConfig ...
 	ErrNoConfig = errors.New("no config json file found in bundle")
-	ErrNoRun    = errors.New("no runtime json file found in bundle")
+	// ErrNoRun ...
+	ErrNoRun = errors.New("no runtime json file found in bundle")
 )
 
 type validateRes struct {
@@ -125,4 +129,3 @@ func checkBundle(res validateRes, files []string) error {
 	}
 	return nil
 }
-
