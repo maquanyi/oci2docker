@@ -55,7 +55,8 @@ mkdir huawei-openlab
 cd huawei-openlab
 git clone https://github.com/huawei-openlab/oci2docker.git
 cd oci2docker
-go build
+make
+sudo make install
 ```
 
 ## Usage
