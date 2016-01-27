@@ -48,7 +48,7 @@ EXPOSE {{.Expose}}
 )
 
 // RunOCI2Docker is the entrypoint for oci2docker CLI tool.
-func RunOCI2Docker(path string, flagDebug bool, imgName string, port string) error {
+func RunOCI2Docker(path string, flagDebug bool, imgName string, port string) {
 	if flagDebug {
 		logrus.SetLevel(logrus.DebugLevel)
 	} else {
@@ -57,7 +57,7 @@ func RunOCI2Docker(path string, flagDebug bool, imgName string, port string) err
 
 	if bValidate := validateOCIProc(path); bValidate != true {
 		logrus.Infof("Invalid oci bundle.")
-		return nil
+		return
 	}
 
 	appdir := getRootPathFromSpecs(path)
@@ -124,7 +124,7 @@ func RunOCI2Docker(path string, flagDebug bool, imgName string, port string) err
 		logrus.Infof("Docker image %v generated successfully.", imgName)
 	}
 
-	return nil
+	return
 }
 
 func generateDockerfile(dockerInfo DockerInfo) {

@@ -16,7 +16,7 @@ func main() {
 	app.Commands = []cli.Command{
 		{
 			Name:  "convert",
-			Usage: "convert operation",
+			Usage: "format converting operation",
 			Flags: []cli.Flag{
 				cli.StringFlag{
 					Name:  "oci-bundle",
@@ -25,7 +25,7 @@ func main() {
 				},
 				cli.BoolFlag{
 					Name:  "debug",
-					Usage: "Enables debug messages",
+					Usage: "debug messages switch, default false",
 				},
 				cli.StringFlag{
 					Name:  "image-name",
@@ -61,14 +61,14 @@ func oci2docker(c *cli.Context) {
 		return
 	}
 
-	if imgName == "" {
-		logrus.Infof("Please specify docker image name for output.")
-		return
-	}
-
 	_, err := os.Stat(ociPath)
 	if os.IsNotExist(err) {
 		logrus.Infof("OCI bundle path does not exsit.")
+		return
+	}
+
+	if imgName == "" {
+		logrus.Infof("Please specify docker image name for output.")
 		return
 	}
 
