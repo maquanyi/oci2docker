@@ -21,10 +21,12 @@ type DockerInfo struct {
 	Expose      string
 	Environment string
 	Command     string
+	User        string
 	Port        bool
 	Env         bool
 	Add         bool
 	Cmd         bool
+	Usr         bool
 }
 
 const (
@@ -36,6 +38,9 @@ ADD {{.Appdir}} .
 {{end}}
 {{if .Env}} 
 ENV {{.Environment}}
+{{end}}
+{{if .Usr}}
+USER {{.User}}
 {{end}}
 {{if .Cmd}}
 CMD {{.Command}}
@@ -64,6 +69,7 @@ func RunOCI2Docker(path string, flagDebug bool, imgName string, port string) {
 	entrypoint := getEntrypointFromSpecs(path)
 	env := getEnvFromSpecs(path)
 	command := getPoststartFromSpecs(path)
+	user := getUserFromSpecs(path)
 
 	bPort := false
 	if port != "" {
@@ -86,16 +92,23 @@ func RunOCI2Docker(path string, flagDebug bool, imgName string, port string) {
 		bCmd = true
 	}
 
+	bUsr := false
+	if user != "" {
+		bUsr = true
+	}
+
 	dockerInfo := DockerInfo{
 		Appdir:      appdir,
 		Entrypoint:  entrypoint,
 		Expose:      port,
 		Environment: env,
 		Command:     command,
+		User:        user,
 		Port:        bPort,
 		Env:         bEnv,
 		Add:         bAdd,
 		Cmd:         bCmd,
+		Usr:         bUsr,
 	}
 
 	generateDockerfile(dockerInfo)
@@ -116,6 +129,7 @@ func RunOCI2Docker(path string, flagDebug bool, imgName string, port string) {
 		buildOut = " > /dev/null"
 	}
 	cmdStr := fmt.Sprintf("docker build -t %s %s %s", imgName, dirWork, buildOut)
+	logrus.Debugf("Docker build log is:")
 
 	err = run(exec.Command("/bin/sh", "-c", cmdStr))
 	if err != nil {
@@ -255,6 +269,21 @@ func getRootPathFromSpecs(path string) string {
 	rootpath := spec.Root.Path
 
 	return rootpath
+}
+
+func getUserFromSpecs(path string) string {
+	pSpec := getConfigSpec(path)
+	if pSpec == nil {
+		return ""
+	}
+	spec := *pSpec
+
+	uid := fmt.Sprintf("%d", spec.Process.User.UID)
+	gid := fmt.Sprintf("%d", spec.Process.User.GID)
+
+	user := uid + "/" + gid
+
+	return user
 }
 
 func getPoststartFromSpecs(path string) string {
