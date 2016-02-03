@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"text/template"
 
 	"github.com/Sirupsen/logrus"
@@ -20,6 +19,7 @@ type DockerInfo struct {
 	Entrypoint  string
 	Expose      string
 	Environment string
+	Workdir     string
 	Command     string
 	User        string
 	Port        bool
@@ -27,6 +27,7 @@ type DockerInfo struct {
 	Add         bool
 	Cmd         bool
 	Usr         bool
+	Cwd         bool
 }
 
 const (
@@ -41,6 +42,9 @@ ENV {{.Environment}}
 {{end}}
 {{if .Usr}}
 USER {{.User}}
+{{end}}
+{{if .Cwd}}
+WORKDIR {{.Workdir}}
 {{end}}
 {{if .Cmd}}
 CMD {{.Command}}
@@ -66,7 +70,7 @@ func RunOCI2Docker(path string, flagDebug bool, imgName string, port string) {
 	}
 
 	appdir := getRootPathFromSpecs(path)
-	entrypoint := getEntrypointFromSpecs(path)
+	entrypoint, workdir := getEntrypointFromSpecs(path)
 	env := getEnvFromSpecs(path)
 	command := getPoststartFromSpecs(path)
 	user := getUserFromSpecs(path)
@@ -97,11 +101,17 @@ func RunOCI2Docker(path string, flagDebug bool, imgName string, port string) {
 		bUsr = true
 	}
 
+	bCwd := false
+	if workdir != "" {
+		bCwd = true
+	}
+
 	dockerInfo := DockerInfo{
 		Appdir:      appdir,
 		Entrypoint:  entrypoint,
 		Expose:      port,
 		Environment: env,
+		Workdir:     workdir,
 		Command:     command,
 		User:        user,
 		Port:        bPort,
@@ -109,6 +119,7 @@ func RunOCI2Docker(path string, flagDebug bool, imgName string, port string) {
 		Add:         bAdd,
 		Cmd:         bCmd,
 		Usr:         bUsr,
+		Cwd:         bCwd,
 	}
 
 	generateDockerfile(dockerInfo)
@@ -212,35 +223,21 @@ func getRuntimeSpec(path string) *specs.LinuxRuntimeSpec {
 	return spec
 }
 
-func getEntrypointFromSpecs(path string) string {
+func getEntrypointFromSpecs(path string) (string, string) {
 
 	pSpec := getConfigSpec(path)
 	if pSpec == nil {
-		return ""
+		return "", ""
 	}
 	spec := *pSpec
 
-	prefixDir := ""
+	workDir := spec.Process.Cwd
 	entryPoint := spec.Process.Args
 	if entryPoint == nil {
-		return "/bin/sh"
-	}
-	if !filepath.IsAbs(entryPoint[0]) {
-		if spec.Process.Cwd == "" {
-			prefixDir = "/"
-		} else {
-			prefixDir = spec.Process.Cwd
-		}
-	}
-	entryPoint[0] = prefixDir + entryPoint[0]
-
-	var res []string
-	res = strings.SplitAfter(entryPoint[0], "/")
-	if len(res) <= 2 {
-		entryPoint[0] = "/bin" + entryPoint[0]
+		return "/bin/sh", ""
 	}
 
-	return entryPoint[0]
+	return entryPoint[0], workDir
 }
 
 func getEnvFromSpecs(path string) string {
