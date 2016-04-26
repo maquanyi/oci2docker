@@ -15,8 +15,6 @@ import (
 const (
 	// ConfigFile is the path to config file inside the bundle
 	ConfigFile = "config.json"
-	// RuntimeFile is the path to runtime.json
-	RuntimeFile = "runtime.json"
 	// RootfsDir is the path to rootfs directory inside the bundle
 	RootfsDir = "rootfs"
 )
@@ -26,16 +24,12 @@ var (
 	ErrNoRootFS = errors.New("no rootfs found in bundle")
 	// ErrNoConfig ...
 	ErrNoConfig = errors.New("no config json file found in bundle")
-	// ErrNoRun ...
-	ErrNoRun = errors.New("no runtime json file found in bundle")
 )
 
 type validateRes struct {
 	cfgOK   bool
-	runOK   bool
 	rfsOK   bool
 	config  io.Reader
-	runtime io.Reader
 }
 
 func validateOCIProc(path string) bool {
@@ -73,12 +67,6 @@ func validateBundle(path string) error {
 				return err
 			}
 			res.cfgOK = true
-		case RuntimeFile:
-			res.runtime, err = os.Open(fpath)
-			if err != nil {
-				return err
-			}
-			res.runOK = true
 		case RootfsDir:
 			if !fi.IsDir() {
 				return errors.New("rootfs is not a directory")
@@ -100,24 +88,14 @@ func checkBundle(res validateRes, files []string) error {
 		if rc, ok := res.config.(io.Closer); ok {
 			rc.Close()
 		}
-		if rc, ok := res.runtime.(io.Closer); ok {
-			rc.Close()
-		}
 	}()
 	if !res.cfgOK {
 		return ErrNoConfig
-	}
-	if !res.runOK {
-		return ErrNoRun
 	}
 	if !res.rfsOK {
 		return ErrNoRootFS
 	}
 	_, err := ioutil.ReadAll(res.config)
-	if err != nil {
-		return fmt.Errorf("error reading the bundle: %v", err)
-	}
-	_, err = ioutil.ReadAll(res.runtime)
 	if err != nil {
 		return fmt.Errorf("error reading the bundle: %v", err)
 	}

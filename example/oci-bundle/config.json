@@ -1,5 +1,5 @@
 {
-	"version": "0.2.0",
+	"ociVersion": "0.5.0",
 	"platform": {
 		"os": "linux",
 		"arch": "amd64"
@@ -18,7 +18,27 @@
 			"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
 			"TERM=xterm"
 		],
-		"cwd": ""
+		"cwd": "/",
+		"capabilities": [
+			"CAP_AUDIT_WRITE",
+			"CAP_KILL",
+			"CAP_NET_BIND_SERVICE"
+		],
+		"rlimits": [
+			{
+				"type": "RLIMIT_CORE",
+				"hard": 1024,
+				"soft": 1024
+			},
+			{
+				"type": "RLIMIT_NOFILE",
+				"hard": 1024,
+				"soft": 1024
+			}
+		],
+		"apparmorProfile": "",
+		"selinuxProcessLabel": "",
+		"noNewPrivileges": true
 	},
 	"root": {
 		"path": "rootfs",
@@ -27,39 +47,205 @@
 	"hostname": "shell",
 	"mounts": [
 		{
-			"name": "proc",
-			"path": "/proc"
+			"destination": "/proc",
+			"type": "proc",
+			"source": "proc"
 		},
 		{
-			"name": "dev",
-			"path": "/dev"
+			"destination": "/dev",
+			"type": "tmpfs",
+			"source": "tmpfs",
+			"options": [
+				"nosuid",
+				"strictatime",
+				"mode=755",
+				"size=65536k"
+			]
 		},
 		{
-			"name": "devpts",
-			"path": "/dev/pts"
+			"destination": "/dev/pts",
+			"type": "devpts",
+			"source": "devpts",
+			"options": [
+				"nosuid",
+				"noexec",
+				"newinstance",
+				"ptmxmode=0666",
+				"mode=0620",
+				"gid=5"
+			]
 		},
 		{
-			"name": "shm",
-			"path": "/dev/shm"
+			"destination": "/dev/shm",
+			"type": "tmpfs",
+			"source": "shm",
+			"options": [
+				"nosuid",
+				"noexec",
+				"nodev",
+				"mode=1777",
+				"size=65536k"
+			]
 		},
 		{
-			"name": "mqueue",
-			"path": "/dev/mqueue"
+			"destination": "/dev/mqueue",
+			"type": "mqueue",
+			"source": "mqueue",
+			"options": [
+				"nosuid",
+				"noexec",
+				"nodev"
+			]
 		},
 		{
-			"name": "sysfs",
-			"path": "/sys"
+			"destination": "/sys",
+			"type": "sysfs",
+			"source": "sysfs",
+			"options": [
+				"nosuid",
+				"noexec",
+				"nodev"
+			]
 		},
 		{
-			"name": "cgroup",
-			"path": "/sys/fs/cgroup"
+			"destination": "/sys/fs/cgroup",
+			"type": "cgroup",
+			"source": "cgroup",
+			"options": [
+				"nosuid",
+				"noexec",
+				"nodev",
+				"relatime",
+				"ro"
+			]
 		}
 	],
+	"hooks": {
+		"prestart": null,
+		"poststart": null,
+		"poststop": null
+	}, 
 	"linux": {
-		"capabilities": [
-			"CAP_AUDIT_WRITE",
-			"CAP_KILL",
-			"CAP_NET_BIND_SERVICE"
+		"devices": [
+			{
+				"path": "/dev/fuse",
+				"type": "c",
+				"major": 10,
+				"minor": 229,
+				"fileMode": 438,
+				"uid": 0,
+				"gid": 0
+			},
+			{
+				"path": "/dev/sda",
+				"type": "b",
+				"major": 8,
+				"minor": 0,
+				"fileMode": 432,
+				"uid": 0,
+				"gid": 0
+			}
+		],
+		"uidMappings": null,
+		"gidMappings": null,
+		"sysctl": null,
+		"cgroupsPath": "",
+		"resources": {
+			"network": {
+				"classId": 104877,
+				"priorities": null
+			},
+			"pids": {
+				"limit": 0
+			},
+			"hugepageLimits": null,
+			"memory": {
+				"limit": 0,
+				"reservation": 0,
+				"swap": 0,
+				"kernel": 0,
+				"kernelTCP": 0,	
+				"swappiness": 0
+			},
+			"cpu": {
+				"shares": 0,
+				"quota": 0,
+				"period": 0,
+				"realtimeRuntime": 0,
+				"realtimePeriod": 0,
+				"cpus": "",
+				"mems": ""
+			},
+			"disableOOMKiller": false,
+			"devices": [
+				{
+					"allow": false,
+					"access": "rwm"
+				},
+				{
+					"allow": true,
+					"type": "c",
+					"major": 10,
+					"minor": 229,
+					"access": "rw"
+				},
+				{
+					"allow": true,
+					"type": "b",
+					"major": 8,
+					"minor": 0,
+					"access": "r"
+				}
+			],
+			"blockIO": {
+				"blkioWeight": 10,
+				"blkioLeafWeight": 10,
+				"blkioWeightDevice": [
+					{
+						"major": 8,
+						"minor": 0,
+						"weight": 500,
+						"leafWeight": 300
+					},
+					{
+						"major": 8,
+						"minor": 16,
+						"weight": 500
+					}
+				],
+				"blkioThrottleReadBpsDevice": [
+					{
+						"major": 8,
+						"minor": 0,
+						"rate": 600
+					}
+				],
+				"blkioThrottleWriteIOPSDevice": [
+					{
+						"major": 8,
+						"minor": 16,
+						"rate": 300
+					}
+				]
+			}
+		},
+		"rootfsPropagation": "",
+		"namespaces": [
+			{
+				"type": "pid"
+			},
+			{
+				"type": "network"
+			},
+			{
+				"type": "ipc"
+			},
+			{
+				"type": "uts"
+			},
+			{
+				"type": "mount"
+			}
 		]
 	}
 }
