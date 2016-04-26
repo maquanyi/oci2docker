@@ -17,12 +17,12 @@ Although OCI doesn't define a transport method we should have a cryptographic di
 
 *Owner:* philips
 
-### Review the need for runtime.json (Target release: v0.3.0)
+### Review the need for runtime.json
 
 There are some discussions about having `runtime.json` being optional for containers and specifying defaults.
 Runtimes would use this standard set of defaults for containers and `runtime.json` would provide overrides for fine tuning of these extra host or platform specific settings.
 
-*Owner:* mrunalp
+*Owner:*
 
 ### Define Container Lifecycle
 
@@ -31,29 +31,38 @@ The lifecycle events of a container also help identify areas to implement hooks 
 
 *Owner:* mrunalp
 
-### Define Standard Container Actions (Target release: v0.3.0)
+### Define Standard Container Actions
 
 Define what type of actions a runtime can perform on a container without imposing hardships on authors of platforms that do not support advanced options.
 
-*Owner:* duglin
+*Owner:*
+
+### Clarify rootfs requirement in base spec
+
+Is the rootfs needed or should it just be expected in the bundle without having a field in the spec?
+
+*Owner:*
 
 ### Container Definition
 
 Define what a software container is and its attributes in a cross platform way.
 
-Could be solved by lifecycle/ops and create/start split discussions
-
-*Owner:* vishh & duglin
+*Owner:*
 
 ### Live Container Updates
 
 Should we allow dynamic container updates to runtime options?
 
-Proposal: make it an optional feature
+*Owner:* vishh
 
-*Owner:* hqhq (was vishh) robdolinms, bcorrie
+### Protobuf Config
 
-### Validation Tooling (Target release: v0.3.0)
+We currently have only one language binding for the spec and that is Go.
+If we change the specs format in the respository to be something like protobuf then the generation for multiple language bindings become effortless.
+
+*Owner:* vbatts
+
+### Validation Tooling
 
 Provide validation tooling for compliance with OCI spec and runtime environment.
 
@@ -69,17 +78,11 @@ Provide a testing framework for compliance with OCI spec and runtime environment
 
 Decide on a robust versioning schema for the spec as it evolves.
 
-Resolved but release process could evolve. Resolved for v0.2.0, expect to revisit near v1.0.0
-
-*Owner:* vbatts
+*Owner:*
 
 ### Printable/Compiled Spec
 
 Regardless of how the spec is written, ensure that it is easy to read and follow for first time users.
-
-Part of this is resolved.  Produces an html & pdf.
-Done
-Would be nice to publish to the OCI web site as part of our release process.
 
 *Owner:* vbatts
 
@@ -93,18 +96,9 @@ Systems:
 * Windows
 * Linux
 
-*Owner:* robdolinms as lead coordinator
-
-### Full Lifecycle Hooks
-
-Ensure that we have lifecycle hooks in the correct places with full coverage over the container lifecycle.
-
-Will probably go away with Vish's work on splitting create and start, and if we have exec.
-
 *Owner:*
 
-### Distributable Format
+### Full Lifecycle Hooks
+Ensure that we have lifecycle hooks in the correct places with full coverage over the container lifecycle.
 
-A common format for serializing and distributing bundles.
-
-*Owner:* vbatts
+*Owner:*

@@ -49,32 +49,6 @@ Also, when a path is specified, a runtime MUST assume that the setup for that pa
     ]
 ```
 
-## User namespace mappings
-
-###### Example
-
-```json
-    "uidMappings": [
-        {
-            "hostID": 1000,
-            "containerID": 0,
-            "size": 10
-        }
-    ],
-    "gidMappings": [
-        {
-            "hostID": 1000,
-            "containerID": 0,
-            "size": 10
-        }
-    ]
-```
-
-uid/gid mappings describe the user namespace mappings from the host to the container.
-The mappings represent how the bundle `rootfs` expects the user namespace to be setup and the runtime SHOULD NOT modify the permissions on the rootfs to realize the mapping.
-*hostID* is the starting uid/gid on the host to be mapped to *containerID* which is the starting uid/gid in the container and *size* refers to the number of ids to be mapped.
-There is a limit of 5 mappings which is the Linux kernel hard limit.
-
 ## Devices
 
 `devices` is an array specifying the list of devices to be created in the container.
@@ -178,8 +152,6 @@ The Spec does not include naming schema for cgroups.
 The Spec does not support [split hierarchy](https://www.kernel.org/doc/Documentation/cgroups/unified-hierarchy.txt).
 The cgroups will be created if they don't exist.
 
-###### Example
-
 ```json
    "cgroupsPath": "/myRuntime/myContainer"
 ```
@@ -208,16 +180,7 @@ For more information, see [the memory cgroup man page](https://www.kernel.org/do
 
 #### Set oom_score_adj
 
-`oomScoreAdj` sets heuristic regarding how the process is evaluated by the kernel during memory pressure.
-For more information, see [the proc filesystem documentation section 3.1](https://www.kernel.org/doc/Documentation/filesystems/proc.txt).
-This is a kernel/system level setting, where as `disableOOMKiller` is scoped for a memory cgroup.
-For more information on how these two settings work together, see [the memory cgroup documentation section 10. OOM Contol](https://www.kernel.org/doc/Documentation/cgroups/memory.txt).
-
-* **`oomScoreAdj`** *(int, optional)* - adjust the oom-killer score
-
-###### Example
-
-###### Example
+More information on `oom_score_adj` available [here](https://www.kernel.org/doc/Documentation/filesystems/proc.txt).
 
 ```json
     "oomScoreAdj": 0
@@ -251,7 +214,7 @@ The following parameters can be specified to setup the controller:
         "swap": 0,
         "kernel": 0,
         "kernelTCP": 0,
-        "swappiness": 0
+        "swappiness": -1
     }
 ```
 
@@ -378,7 +341,7 @@ For more information, see [the net\_cls cgroup man page](https://www.kernel.org/
 
 The following parameters can be specified to setup these cgroup controllers:
 
-* **`classID`** *(uint32, optional)* - is the network class identifier the cgroup's network packets will be tagged with
+* **`classID`** *(string, optional)* - is the network class identifier the cgroup's network packets will be tagged with
 
 * **`priorities`** *(array, optional)* - specifies a list of objects of the priorities assigned to traffic originating from
 processes in the group and egressing the system on various interfaces. The following parameters can be specified per-priority:
@@ -389,7 +352,7 @@ processes in the group and egressing the system on various interfaces. The follo
 
 ```json
    "network": {
-        "classID": 1048577,
+        "classID": "0x100001",
         "priorities": [
             {
                 "name": "eth0",
@@ -539,15 +502,4 @@ Its value is either slave, private, or shared.
 
 ```json
     "rootfsPropagation": "slave",
-```
-
-## No new privileges
-
-Setting `noNewPrivileges` to true prevents the processes in the container from gaining additional privileges.
-[The kernel doc](https://www.kernel.org/doc/Documentation/prctl/no_new_privs.txt) has more information on how this is achieved using a prctl system call.
-
-###### Example
-
-```json
-    "noNewPrivileges": true,
 ```

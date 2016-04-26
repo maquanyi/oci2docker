@@ -5,7 +5,7 @@ package specs
 // bundle is packaged for distribution.
 type Spec struct {
 	// Version is the version of the specification that is supported.
-	Version string `json:"ociVersion"`
+	Version string `json:"version"`
 	// Platform is the host information for OS and Arch.
 	Platform Platform `json:"platform"`
 	// Process is the container's main process.
@@ -13,7 +13,7 @@ type Spec struct {
 	// Root is the root information for the container's filesystem.
 	Root Root `json:"root"`
 	// Hostname is the container's host name.
-	Hostname string `json:"hostname,omitempty"`
+	Hostname string `json:"hostname"`
 	// Mounts profile configuration for adding mounts to the container's filesystem.
 	Mounts []MountPoint `json:"mounts"`
 }
@@ -27,7 +27,7 @@ type Process struct {
 	// Args specifies the binary and arguments for the application to execute.
 	Args []string `json:"args"`
 	// Env populates the process environment for the process.
-	Env []string `json:"env,omitempty"`
+	Env []string `json:"env"`
 	// Cwd is the current working directory for the process and must be
 	// relative to the container's root.
 	Cwd string `json:"cwd"`

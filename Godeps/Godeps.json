@@ -1,21 +1,21 @@
 {
 	"ImportPath": "github.com/huawei-openlab/oci2docker",
-	"GoVersion": "go1.4.2",
+	"GoVersion": "go1.5rc1",
 	"Deps": [
 		{
 			"ImportPath": "github.com/Sirupsen/logrus",
-			"Comment": "v0.8.7",
-			"Rev": "418b41d23a1bf978c06faea5313ba194650ac088"
+			"Comment": "v0.10.0-16-gcd7d1bb",
+			"Rev": "cd7d1bbe41066b6c1f19780f895901052150a575"
 		},
 		{
 			"ImportPath": "github.com/codegangsta/cli",
-			"Comment": "1.2.0-139-g142e6cd",
-			"Rev": "142e6cd241a4dfbf7f07a018f1f8225180018da4"
+			"Comment": "v1.14.0-7-g4733699",
+			"Rev": "4733699ce30faa633c4db36ebfbe427963593d7d"
 		},
 		{
-			"ImportPath": "github.com/opencontainers/specs",
-			"Comment": "v0.2.0-40-ga7b5092",
-			"Rev": "a7b50925d8996923d99e1c50750131e20b743067"
+			"ImportPath": "github.com/opencontainers/specs/specs-go",
+			"Comment": "v0.5.0-36-gf955d90",
+			"Rev": "f955d90e70a98ddfb886bd930ffd076da9b67998"
 		}
 	]
 }

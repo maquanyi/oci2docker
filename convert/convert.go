@@ -10,7 +10,7 @@ import (
 	"text/template"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/opencontainers/specs"
+	specs "github.com/opencontainers/specs/specs-go"
 )
 
 // DockerInfo stores data for generating Dockerfile.
@@ -185,7 +185,7 @@ func createWorkDir() string {
 	return idir
 }
 
-func getConfigSpec(path string) *specs.LinuxSpec {
+func getConfigSpec(path string) *specs.Spec {
 
 	configPath := path + "/config.json"
 	config, err := ioutil.ReadFile(configPath)
@@ -194,29 +194,10 @@ func getConfigSpec(path string) *specs.LinuxSpec {
 		return nil
 	}
 
-	spec := new(specs.LinuxSpec)
+	spec := new(specs.Spec)
 	err = json.Unmarshal(config, spec)
 	if err != nil {
 		logrus.Debugf("Unmarshal config.json failed: %v", err)
-		return nil
-	}
-
-	return spec
-}
-
-func getRuntimeSpec(path string) *specs.LinuxRuntimeSpec {
-
-	runtimePath := path + "/runtime.json"
-	runtime, err := ioutil.ReadFile(runtimePath)
-	if err != nil {
-		logrus.Debugf("Open file runtime.json failed: %v", err)
-		return nil
-	}
-
-	spec := new(specs.LinuxRuntimeSpec)
-	err = json.Unmarshal(runtime, spec)
-	if err != nil {
-		logrus.Debugf("Unmarshal runtime.json failed: %v", err)
 		return nil
 	}
 
@@ -284,7 +265,7 @@ func getUserFromSpecs(path string) string {
 }
 
 func getPoststartFromSpecs(path string) string {
-	pSpec := getRuntimeSpec(path)
+	pSpec := getConfigSpec(path)
 	if pSpec == nil {
 		return ""
 	}

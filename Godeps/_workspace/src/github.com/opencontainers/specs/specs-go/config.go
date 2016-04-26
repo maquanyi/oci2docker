@@ -2,26 +2,125 @@ package specs
 
 import "os"
 
-// LinuxStateDirectory holds the container's state information
-const LinuxStateDirectory = "/run/opencontainer/containers"
+// Spec is the base configuration for the container.  It specifies platform
+// independent configuration. This information must be included when the
+// bundle is packaged for distribution.
+type Spec struct {
+	// Version is the version of the specification that is supported.
+	Version string `json:"ociVersion"`
+	// Platform is the host information for OS and Arch.
+	Platform Platform `json:"platform"`
+	// Process is the container's main process.
+	Process Process `json:"process"`
+	// Root is the root information for the container's filesystem.
+	Root Root `json:"root"`
+	// Hostname is the container's host name.
+	Hostname string `json:"hostname,omitempty"`
+	// Mounts profile configuration for adding mounts to the container's filesystem.
+	Mounts []Mount `json:"mounts"`
+	// Hooks are the commands run at various lifecycle events of the container.
+	Hooks Hooks `json:"hooks"`
+	// Annotations is an unstructured key value map that may be set by external tools to store and retrieve arbitrary metadata.
+	Annotations map[string]string `json:"annotations,omitempty"`
 
-// LinuxRuntimeSpec is the full specification for linux containers.
-type LinuxRuntimeSpec struct {
-	RuntimeSpec
-	// LinuxRuntime is platform specific configuration for linux based containers.
-	Linux LinuxRuntime `json:"linux"`
+	// Linux is platform specific configuration for Linux based containers.
+	Linux Linux `json:"linux" platform:"linux"`
 }
 
-// LinuxRuntime hosts the Linux-only runtime information
-type LinuxRuntime struct {
-	// UIDMapping specifies user mappings for supporting user namespaces on linux.
-	UIDMappings []IDMapping `json:"uidMappings"`
-	// GIDMapping specifies group mappings for supporting user namespaces on linux.
-	GIDMappings []IDMapping `json:"gidMappings"`
-	// Rlimits specifies rlimit options to apply to the container's process.
-	Rlimits []Rlimit `json:"rlimits"`
+// Process contains information to start a specific application inside the container.
+type Process struct {
+	// Terminal creates an interactive terminal for the container.
+	Terminal bool `json:"terminal"`
+	// User specifies user information for the process.
+	User User `json:"user"`
+	// Args specifies the binary and arguments for the application to execute.
+	Args []string `json:"args"`
+	// Env populates the process environment for the process.
+	Env []string `json:"env,omitempty"`
+	// Cwd is the current working directory for the process and must be
+	// relative to the container's root.
+	Cwd string `json:"cwd"`
+	// Capabilities are Linux capabilities that are kept for the container.
+	Capabilities []string `json:"capabilities,omitempty" platform:"linux"`
+	// Rlimits specifies rlimit options to apply to the process.
+	Rlimits []Rlimit `json:"rlimits,omitempty"`
+	// NoNewPrivileges controls whether additional privileges could be gained by processes in the container.
+	NoNewPrivileges bool `json:"noNewPrivileges,omitempty"`
+
+	// ApparmorProfile specified the apparmor profile for the container. (this field is platform dependent)
+	ApparmorProfile string `json:"apparmorProfile,omitempty" platform:"linux"`
+	// SelinuxLabel specifies the selinux context that the container process is run as. (this field is platform dependent)
+	SelinuxLabel string `json:"selinuxLabel,omitempty" platform:"linux"`
+}
+
+// User specifies Linux specific user and group information for the container's
+// main process.
+type User struct {
+	// UID is the user id. (this field is platform dependent)
+	UID uint32 `json:"uid,omitempty" platform:"linux"`
+	// GID is the group id. (this field is platform dependent)
+	GID uint32 `json:"gid,omitempty" platform:"linux"`
+	// AdditionalGids are additional group ids set for the container's process. (this field is platform dependent)
+	AdditionalGids []uint32 `json:"additionalGids,omitempty" platform:"linux"`
+}
+
+// Root contains information about the container's root filesystem on the host.
+type Root struct {
+	// Path is the absolute path to the container's root filesystem.
+	Path string `json:"path"`
+	// Readonly makes the root filesystem for the container readonly before the process is executed.
+	Readonly bool `json:"readonly"`
+}
+
+// Platform specifies OS and arch information for the host system that the container
+// is created for.
+type Platform struct {
+	// OS is the operating system.
+	OS string `json:"os"`
+	// Arch is the architecture
+	Arch string `json:"arch"`
+}
+
+// Mount specifies a mount for a container.
+type Mount struct {
+	// Destination is the path where the mount will be placed relative to the container's root.  The path and child directories MUST exist, a runtime MUST NOT create directories automatically to a mount point.
+	Destination string `json:"destination"`
+	// Type specifies the mount kind.
+	Type string `json:"type"`
+	// Source specifies the source path of the mount.  In the case of bind mounts on
+	// Linux based systems this would be the file on the host.
+	Source string `json:"source"`
+	// Options are fstab style mount options.
+	Options []string `json:"options,omitempty"`
+}
+
+// Hook specifies a command that is run at a particular event in the lifecycle of a container
+type Hook struct {
+	Path    string   `json:"path"`
+	Args    []string `json:"args,omitempty"`
+	Env     []string `json:"env,omitempty"`
+	Timeout *int     `json:"timeout,omitempty"`
+}
+
+// Hooks for container setup and teardown
+type Hooks struct {
+	// Prestart is a list of hooks to be run before the container process is executed.
+	// On Linux, they are run after the container namespaces are created.
+	Prestart []Hook `json:"prestart,omitempty"`
+	// Poststart is a list of hooks to be run after the container process is started.
+	Poststart []Hook `json:"poststart,omitempty"`
+	// Poststop is a list of hooks to be run after the container process exits.
+	Poststop []Hook `json:"poststop,omitempty"`
+}
+
+// Linux contains platform specific configuration for Linux based containers.
+type Linux struct {
+	// UIDMapping specifies user mappings for supporting user namespaces on Linux.
+	UIDMappings []IDMapping `json:"uidMappings,omitempty"`
+	// GIDMapping specifies group mappings for supporting user namespaces on Linux.
+	GIDMappings []IDMapping `json:"gidMappings,omitempty"`
 	// Sysctl are a set of key value pairs that are set for the container on start
-	Sysctl map[string]string `json:"sysctl"`
+	Sysctl map[string]string `json:"sysctl,omitempty"`
 	// Resources contain cgroup information for handling resource constraints
 	// for the container
 	Resources *Resources `json:"resources,omitempty"`
@@ -30,29 +129,31 @@ type LinuxRuntime struct {
 	// If resources are specified, the cgroups at CgroupsPath will be updated based on resources.
 	CgroupsPath *string `json:"cgroupsPath,omitempty"`
 	// Namespaces contains the namespaces that are created and/or joined by the container
-	Namespaces []Namespace `json:"namespaces"`
-	// Devices are a list of device nodes that are created and enabled for the container
-	Devices []Device `json:"devices"`
-	// ApparmorProfile specified the apparmor profile for the container.
-	ApparmorProfile string `json:"apparmorProfile"`
-	// SelinuxProcessLabel specifies the selinux context that the container process is run as.
-	SelinuxProcessLabel string `json:"selinuxProcessLabel"`
+	Namespaces []Namespace `json:"namespaces,omitempty"`
+	// Devices are a list of device nodes that are created for the container
+	Devices []Device `json:"devices,omitempty"`
 	// Seccomp specifies the seccomp security settings for the container.
-	Seccomp Seccomp `json:"seccomp"`
-	// RootfsPropagation is the rootfs mount propagation mode for the container
-	RootfsPropagation string `json:"rootfsPropagation"`
+	Seccomp *Seccomp `json:"seccomp,omitempty"`
+	// RootfsPropagation is the rootfs mount propagation mode for the container.
+	RootfsPropagation string `json:"rootfsPropagation,omitempty"`
+	// MaskedPaths masks over the provided paths inside the container.
+	MaskedPaths []string `json:"maskedPaths,omitempty"`
+	// ReadonlyPaths sets the provided paths as RO inside the container.
+	ReadonlyPaths []string `json:"readonlyPaths,omitempty"`
+	// MountLabel specifies the selinux context for the mounts in the container.
+	MountLabel string `json:"mountLabel,omitempty"`
 }
 
-// Namespace is the configuration for a linux namespace
+// Namespace is the configuration for a Linux namespace
 type Namespace struct {
 	// Type is the type of Linux namespace
 	Type NamespaceType `json:"type"`
 	// Path is a path to an existing namespace persisted on disk that can be joined
 	// and is of the same type
-	Path string `json:"path"`
+	Path string `json:"path,omitempty"`
 }
 
-// NamespaceType is one of the linux namespaces
+// NamespaceType is one of the Linux namespaces
 type NamespaceType string
 
 const (
@@ -137,15 +238,15 @@ type BlockIO struct {
 	// Specifies tasks' weight in the given cgroup while competing with the cgroup's child cgroups, range is from 10 to 1000, CFQ scheduler only
 	LeafWeight *uint16 `json:"blkioLeafWeight,omitempty"`
 	// Weight per cgroup per device, can override BlkioWeight
-	WeightDevice []*WeightDevice `json:"blkioWeightDevice,omitempty"`
+	WeightDevice []WeightDevice `json:"blkioWeightDevice,omitempty"`
 	// IO read rate limit per cgroup per device, bytes per second
-	ThrottleReadBpsDevice []*ThrottleDevice `json:"blkioThrottleReadBpsDevice,omitempty"`
+	ThrottleReadBpsDevice []ThrottleDevice `json:"blkioThrottleReadBpsDevice,omitempty"`
 	// IO write rate limit per cgroup per device, bytes per second
-	ThrottleWriteBpsDevice []*ThrottleDevice `json:"blkioThrottleWriteBpsDevice,omitempty"`
+	ThrottleWriteBpsDevice []ThrottleDevice `json:"blkioThrottleWriteBpsDevice,omitempty"`
 	// IO read rate limit per cgroup per device, IO per second
-	ThrottleReadIOPSDevice []*ThrottleDevice `json:"blkioThrottleReadIOPSDevice,omitempty"`
+	ThrottleReadIOPSDevice []ThrottleDevice `json:"blkioThrottleReadIOPSDevice,omitempty"`
 	// IO write rate limit per cgroup per device, IO per second
-	ThrottleWriteIOPSDevice []*ThrottleDevice `json:"blkioThrottleWriteIOPSDevice,omitempty"`
+	ThrottleWriteIOPSDevice []ThrottleDevice `json:"blkioThrottleWriteIOPSDevice,omitempty"`
 }
 
 // Memory for Linux cgroup 'memory' resource management
@@ -191,15 +292,15 @@ type Pids struct {
 // Network identification and priority configuration
 type Network struct {
 	// Set class identifier for container's network packets
-	// this is actually a string instead of a uint64 to overcome the json
-	// limitation of specifying hex numbers
-	ClassID string `json:"classID"`
+	ClassID *uint32 `json:"classID"`
 	// Set priority of network traffic for container
-	Priorities []InterfacePriority `json:"priorities"`
+	Priorities []InterfacePriority `json:"priorities,omitempty"`
 }
 
 // Resources has container runtime resource constraints
 type Resources struct {
+	// Devices are a list of device rules for the whitelist controller
+	Devices []DeviceCgroup `json:"devices"`
 	// DisableOOMKiller disables the OOM killer for out of memory conditions
 	DisableOOMKiller *bool `json:"disableOOMKiller,omitempty"`
 	// Specify an oom_score_adj for the container.
@@ -218,31 +319,43 @@ type Resources struct {
 	Network *Network `json:"network,omitempty"`
 }
 
-// Device represents the information on a Linux special device file
+// Device represents the mknod information for a Linux special device file
 type Device struct {
 	// Path to the device.
 	Path string `json:"path"`
 	// Device type, block, char, etc.
-	Type rune `json:"type"`
+	Type string `json:"type"`
 	// Major is the device's major number.
 	Major int64 `json:"major"`
 	// Minor is the device's minor number.
 	Minor int64 `json:"minor"`
-	// Cgroup permissions format, rwm.
-	Permissions string `json:"permissions"`
 	// FileMode permission bits for the device.
-	FileMode os.FileMode `json:"fileMode"`
+	FileMode *os.FileMode `json:"fileMode,omitempty"`
 	// UID of the device.
-	UID uint32 `json:"uid"`
+	UID *uint32 `json:"uid,omitempty"`
 	// Gid of the device.
-	GID uint32 `json:"gid"`
+	GID *uint32 `json:"gid,omitempty"`
+}
+
+// DeviceCgroup represents a device rule for the whitelist controller
+type DeviceCgroup struct {
+	// Allow or deny
+	Allow bool `json:"allow"`
+	// Device type, block, char, etc.
+	Type *string `json:"type,omitempty"`
+	// Major is the device's major number.
+	Major *int64 `json:"major,omitempty"`
+	// Minor is the device's minor number.
+	Minor *int64 `json:"minor,omitempty"`
+	// Cgroup access permissions format, rwm.
+	Access *string `json:"access,omitempty"`
 }
 
 // Seccomp represents syscall restrictions
 type Seccomp struct {
-	DefaultAction Action     `json:"defaultAction"`
-	Architectures []Arch     `json:"architectures"`
-	Syscalls      []*Syscall `json:"syscalls"`
+	DefaultAction Action    `json:"defaultAction"`
+	Architectures []Arch    `json:"architectures"`
+	Syscalls      []Syscall `json:"syscalls,omitempty"`
 }
 
 // Arch used for additional architectures
@@ -302,5 +415,5 @@ type Arg struct {
 type Syscall struct {
 	Name   string `json:"name"`
 	Action Action `json:"action"`
-	Args   []*Arg `json:"args"`
+	Args   []Arg  `json:"args,omitempty"`
 }
